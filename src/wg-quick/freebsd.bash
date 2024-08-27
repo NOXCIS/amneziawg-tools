@@ -28,8 +28,6 @@ CONFIG_FILE=""
 PROGRAM="${0##*/}"
 ARGS=( "$@" )
 
-IS_ASESCURITY_ON=0
-
 cmd() {
 	echo "[#] $*" >&3
 	"$@"
@@ -40,7 +38,7 @@ die() {
 	exit 1
 }
 
-CONFIG_SEARCH_PATHS=( /etc/amnezia/amneziawg /usr/local/etc/amnezia/amneziawg )
+CONFIG_SEARCH_PATHS=( /etc/wireguard /usr/local/etc/wireguard )
 
 unset ORIGINAL_TMPDIR
 make_temp() {
@@ -98,17 +96,6 @@ parse_options() {
 			PostDown) POST_DOWN+=( "$value" ); continue ;;
 			SaveConfig) read_bool SAVE_CONFIG "$value"; continue ;;
 			esac
-			case "$key" in
-			Jc);&
-			Jmin);&
-			Jmax);&
-			S1);&
-			S2);&
-			H1);&
-			H2);&
-			H3);&
-			H4) IS_ASESCURITY_ON=1;;
-			esac
 		fi
 		WG_CONFIG+="$line"$'\n'
 	done < "$CONFIG_FILE"
@@ -129,11 +116,7 @@ auto_su() {
 
 add_if() {
 	local ret rc
-	local cmd="ifconfig wg create name "$INTERFACE""
-	if [[ $IS_ASESCURITY_ON == 1 ]]; then
-		cmd="amneziawg-go "$INTERFACE"";
-	fi
-	if ret="$(cmd $cmd 2>&1 >/dev/null)"; then
+	if ret="$(cmd ifconfig wg create name "$INTERFACE" 2>&1 >/dev/null)"; then
 		return 0
 	fi
 	rc=$?
@@ -142,7 +125,7 @@ add_if() {
 		return $rc
 	fi
 	echo "[!] Missing WireGuard kernel support ($ret). Falling back to slow userspace implementation." >&3
-	cmd "${WG_QUICK_USERSPACE_IMPLEMENTATION:-amneziawg-go}" "$INTERFACE"
+	cmd "${WG_QUICK_USERSPACE_IMPLEMENTATION:-wireguard-go}" "$INTERFACE"
 }
 
 del_routes() {
@@ -171,8 +154,8 @@ del_routes() {
 
 del_if() {
 	[[ $HAVE_SET_DNS -eq 0 ]] || unset_dns
-	if [[ -S /var/run/amneziawg/$INTERFACE.sock ]]; then
-		cmd rm -f "/var/run/amneziawg/$INTERFACE.sock"
+	if [[ -S /var/run/wireguard/$INTERFACE.sock ]]; then
+		cmd rm -f "/var/run/wireguard/$INTERFACE.sock"
 	else
 		cmd ifconfig "$INTERFACE" destroy
 	fi
