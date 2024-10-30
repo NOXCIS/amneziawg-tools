@@ -447,41 +447,6 @@ static inline bool parse_uint32(uint32_t *device_value, const char *name, const 
 	return true;
 }
 
-static inline bool parse_bool(bool *device_value, const char *name, const char *value) {
-
-	if (!strlen(value)) {
-		fprintf(stderr, "Unable to parse empty string\n");
-		return false;
-	}
-
-	if (!strcasecmp(value, "off")) {
-		*device_value = false;
-		return true;
-	}
-
-	if (!strcasecmp(value, "on")) {
-		*device_value = true;
-		return true;
-	}
-
-	if (!char_is_digit(value[0]))
-		goto err;
-
-	char *end;
-	uint32_t ret;
-	ret = strtoul(value, &end, 10);
-
-	if (*end) {
-		fprintf(stderr, "Unable to parse %s: `%s'\n", name, value);
-		exit(1);
-	}
-	*device_value = ret != 0;
-	return true;
-err:
-	fprintf(stderr, "Boolean value is neither on/off nor 0/1: `%s'\n", value);
-	return false;
-}
-
 static bool process_line(struct config_ctx *ctx, const char *line)
 {
 	const char *value;
@@ -575,10 +540,6 @@ static bool process_line(struct config_ctx *ctx, const char *line)
 			ret = parse_key(ctx->last_peer->preshared_key, value);
 			if (ret)
 				ctx->last_peer->flags |= WGPEER_HAS_PRESHARED_KEY;
-		} else if (key_match("AdvancedSecurity")) {
-			ret = parse_bool(&ctx->last_peer->advanced_security, "AdvancedSecurity", value);
-			if (ret)
-				ctx->last_peer->flags |= WGPEER_HAS_ADVANCED_SECURITY;
 		} else
 			goto error;
 	} else
@@ -635,7 +596,7 @@ bool config_read_init(struct config_ctx *ctx, bool append)
 		return false;
 	}
 	if (!append)
-		ctx->device->flags |= WGDEVICE_REPLACE_PEERS | WGDEVICE_HAS_PRIVATE_KEY | WGDEVICE_HAS_FWMARK;
+		ctx->device->flags |= WGDEVICE_REPLACE_PEERS | WGDEVICE_HAS_PRIVATE_KEY | WGDEVICE_HAS_FWMARK | WGDEVICE_HAS_LISTEN_PORT | WGDEVICE_HAS_JC | WGDEVICE_HAS_JMIN | WGDEVICE_HAS_JMAX | WGDEVICE_HAS_S1 | WGDEVICE_HAS_S2 | WGDEVICE_HAS_H1 | WGDEVICE_HAS_H2 | WGDEVICE_HAS_H3 | WGDEVICE_HAS_H4;
 	return true;
 }
 
@@ -700,67 +661,50 @@ struct wgdevice *config_read_cmd(const char *argv[], int argc)
 			device->flags |= WGDEVICE_HAS_PRIVATE_KEY;
 			argv += 2;
 			argc -= 2;
+
 		} else if (!strcmp(argv[0], "jc") && argc >= 2 && !peer) {
 			if (!parse_uint16(&device->junk_packet_count, "jc", argv[1]))
 				goto error;
-			
-			device->flags |= WGDEVICE_HAS_JC;
 			argv += 2;
 			argc -= 2;
 		} else if (!strcmp(argv[0], "jmin") && argc >= 2 && !peer) {
 			if (!parse_uint16(&device->junk_packet_min_size, "jmin", argv[1]))
 				goto error;
-			
-			device->flags |= WGDEVICE_HAS_JMIN;
 			argv += 2;
 			argc -= 2;
 		} else if (!strcmp(argv[0], "jmax") && argc >= 2 && !peer) {
 			if (!parse_uint16(&device->junk_packet_max_size, "jmax", argv[1]))
 				goto error;
-			
-			device->flags |= WGDEVICE_HAS_JMAX;
 			argv += 2;
 			argc -= 2;
 		} else if (!strcmp(argv[0], "s1") && argc >= 2 && !peer) {
 			if (!parse_uint16(&device->init_packet_junk_size, "s1", argv[1]))
 				goto error;
-			
-			device->flags |= WGDEVICE_HAS_S1;
 			argv += 2;
 			argc -= 2;
 		} else if (!strcmp(argv[0], "s2") && argc >= 2 && !peer) {
 			if (!parse_uint16(&device->response_packet_junk_size, "s2", argv[1]))
 				goto error;
-			
-			device->flags |= WGDEVICE_HAS_S2;
 			argv += 2;
 			argc -= 2;
 		} else if (!strcmp(argv[0], "h1") && argc >= 2 && !peer) {
 			if (!parse_uint32(&device->init_packet_magic_header, "h1", argv[1]))
 				goto error;
-			
-			device->flags |= WGDEVICE_HAS_H1;
 			argv += 2;
 			argc -= 2;
 		} else if (!strcmp(argv[0], "h2") && argc >= 2 && !peer) {
 			if (!parse_uint32(&device->response_packet_magic_header, "h2", argv[1]))
 				goto error;
-			
-			device->flags |= WGDEVICE_HAS_H2;
 			argv += 2;
 			argc -= 2;
 		} else if (!strcmp(argv[0], "h3") && argc >= 2 && !peer) {
 			if (!parse_uint32(&device->underload_packet_magic_header, "h3", argv[1]))
 				goto error;
-			
-			device->flags |= WGDEVICE_HAS_H3;
 			argv += 2;
 			argc -= 2;
 		} else if (!strcmp(argv[0], "h4") && argc >= 2 && !peer) {
 			if (!parse_uint32(&device->transport_packet_magic_header, "h4", argv[1]))
 				goto error;
-			
-			device->flags |= WGDEVICE_HAS_H4;
 			argv += 2;
 			argc -= 2;
 		} else if (!strcmp(argv[0], "peer") && argc >= 2) {
@@ -811,12 +755,6 @@ struct wgdevice *config_read_cmd(const char *argv[], int argc)
 			if (!parse_keyfile(peer->preshared_key, argv[1]))
 				goto error;
 			peer->flags |= WGPEER_HAS_PRESHARED_KEY;
-			argv += 2;
-			argc -= 2;
-		} else if (!strcmp(argv[0], "advanced-security") && argc >= 2 && peer) {
-			if (!parse_bool(&peer->advanced_security, "AdvancedSecurity", argv[1]))
-				goto error;
-			peer->flags |= WGPEER_HAS_ADVANCED_SECURITY;
 			argv += 2;
 			argc -= 2;
 		} else {
