@@ -221,11 +221,6 @@ again:
 					goto toobig_peers;
 			}
 		}
-		if (peer->flags & WGPEER_HAS_ADVANCED_SECURITY) {
-			if (peer->advanced_security)
-				mnl_attr_put_check(nlh, SOCKET_BUFFER_SIZE, WGPEER_A_ADVANCED_SECURITY, 0, NULL);
-			flags |= WGPEER_F_HAS_ADVANCED_SECURITY;
-		}
 		if (flags) {
 			if (!mnl_attr_put_u32_check(nlh, SOCKET_BUFFER_SIZE, WGPEER_A_FLAGS, flags))
 				goto toobig_peers;
@@ -394,25 +389,6 @@ static int parse_peer(const struct nlattr *attr, void *data)
 		if (!mnl_attr_validate(attr, MNL_TYPE_U64))
 			peer->tx_bytes = mnl_attr_get_u64(attr);
 		break;
-	case WGPEER_A_FLAGS:
-		if (!mnl_attr_validate(attr, MNL_TYPE_U32)) {
-			uint32_t flags = mnl_attr_get_u32(attr);
-
-			if (flags & WGPEER_F_HAS_ADVANCED_SECURITY && !(peer->flags & WGPEER_HAS_ADVANCED_SECURITY)) {
-				peer->flags |= WGPEER_HAS_ADVANCED_SECURITY;
-				peer->advanced_security = false;
-			}
-		}
-		break;
-	case WGPEER_A_ADVANCED_SECURITY:
-		if (!mnl_attr_validate(attr, MNL_TYPE_FLAG)) {
-			peer->advanced_security = true;
-
-			if (!(peer->flags & WGPEER_HAS_ADVANCED_SECURITY)) {
-				peer->flags |= WGPEER_HAS_ADVANCED_SECURITY;
-			}
-		}
-		break;
 	case WGPEER_A_ALLOWEDIPS:
 		return mnl_attr_parse_nested(attr, parse_allowedips, peer);
 	}
@@ -483,59 +459,41 @@ static int parse_device(const struct nlattr *attr, void *data)
 		break;
 	case WGDEVICE_A_PEERS:
 		return mnl_attr_parse_nested(attr, parse_peers, device);
-	case WGDEVICE_A_JC:
-		if (!mnl_attr_validate(attr, MNL_TYPE_U16)) {
+	case WGDEVICE_HAS_JC:
+		if (!mnl_attr_validate(attr, MNL_TYPE_U16))
 			device->junk_packet_count = mnl_attr_get_u16(attr);
-			device->flags |= WGDEVICE_HAS_JC;
-		}
 		break;
-	case WGDEVICE_A_JMIN:
-		if (!mnl_attr_validate(attr, MNL_TYPE_U16)) {
+	case WGDEVICE_HAS_JMIN:
+		if (!mnl_attr_validate(attr, MNL_TYPE_U16))
 			device->junk_packet_min_size = mnl_attr_get_u16(attr);
-			device->flags |= WGDEVICE_HAS_JMIN;
-		}
 		break;
-	case WGDEVICE_A_JMAX:
-		if (!mnl_attr_validate(attr, MNL_TYPE_U16)) {
+	case WGDEVICE_HAS_JMAX:
+		if (!mnl_attr_validate(attr, MNL_TYPE_U16))
 			device->junk_packet_max_size = mnl_attr_get_u16(attr);
-			device->flags |= WGDEVICE_HAS_JMAX;
-		}
 		break;
-	case WGDEVICE_A_S1:
-		if (!mnl_attr_validate(attr, MNL_TYPE_U16)) {
+	case WGDEVICE_HAS_S1:
+		if (!mnl_attr_validate(attr, MNL_TYPE_U16))
 			device->init_packet_junk_size = mnl_attr_get_u16(attr);
-			device->flags |= WGDEVICE_HAS_S1;
-		}
 		break;
-	case WGDEVICE_A_S2:
-		if (!mnl_attr_validate(attr, MNL_TYPE_U16)) {
+	case WGDEVICE_HAS_S2:
+		if (!mnl_attr_validate(attr, MNL_TYPE_U16))
 			device->response_packet_junk_size = mnl_attr_get_u16(attr);
-			device->flags |= WGDEVICE_HAS_S2;
-		}
 		break;
-	case WGDEVICE_A_H1:
-		if (!mnl_attr_validate(attr, MNL_TYPE_U32)) {
+	case WGDEVICE_HAS_H1:
+		if (!mnl_attr_validate(attr, MNL_TYPE_U32))
 			device->init_packet_magic_header = mnl_attr_get_u32(attr);
-			device->flags |= WGDEVICE_HAS_H1;
-		}
 		break;
-	case WGDEVICE_A_H2:
-		if (!mnl_attr_validate(attr, MNL_TYPE_U32)) {
+	case WGDEVICE_HAS_H2:
+		if (!mnl_attr_validate(attr, MNL_TYPE_U32))
 			device->response_packet_magic_header = mnl_attr_get_u32(attr);
-			device->flags |= WGDEVICE_HAS_H2;
-		}
 		break;
-	case WGDEVICE_A_H3:
-		if (!mnl_attr_validate(attr, MNL_TYPE_U32)) {
+	case WGDEVICE_HAS_H3:
+		if (!mnl_attr_validate(attr, MNL_TYPE_U32))
 			device->underload_packet_magic_header = mnl_attr_get_u32(attr);
-			device->flags |= WGDEVICE_HAS_H3;
-		}
 		break;
-	case WGDEVICE_A_H4:
-		if (!mnl_attr_validate(attr, MNL_TYPE_U32)) {
+	case WGDEVICE_HAS_H4:
+		if (!mnl_attr_validate(attr, MNL_TYPE_U32))
 			device->transport_packet_magic_header = mnl_attr_get_u32(attr);
-			device->flags |= WGDEVICE_HAS_H4;
-		}
 		break;
 	}
 
