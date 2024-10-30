@@ -26,7 +26,7 @@
 
 /* wireguard.h netlink uapi: */
 
-#define WG_GENL_NAME "amneziawg"
+#define WG_GENL_NAME "wireguard"
 #define WG_GENL_VERSION 1
 
 enum wg_cmd {
@@ -48,22 +48,12 @@ enum wgdevice_attribute {
 	WGDEVICE_A_LISTEN_PORT,
 	WGDEVICE_A_FWMARK,
 	WGDEVICE_A_PEERS,
-	WGDEVICE_A_JC,
-	WGDEVICE_A_JMIN,
-	WGDEVICE_A_JMAX,
-	WGDEVICE_A_S1,
-	WGDEVICE_A_S2,
-	WGDEVICE_A_H1,
-	WGDEVICE_A_H2,
-	WGDEVICE_A_H3,
-	WGDEVICE_A_H4,
 	__WGDEVICE_A_LAST
 };
 
 enum wgpeer_flag {
 	WGPEER_F_REMOVE_ME = 1U << 0,
-	WGPEER_F_REPLACE_ALLOWEDIPS = 1U << 1,
-	WGPEER_F_HAS_ADVANCED_SECURITY = 1U << 3
+	WGPEER_F_REPLACE_ALLOWEDIPS = 1U << 1
 };
 enum wgpeer_attribute {
 	WGPEER_A_UNSPEC,
@@ -77,7 +67,6 @@ enum wgpeer_attribute {
 	WGPEER_A_TX_BYTES,
 	WGPEER_A_ALLOWEDIPS,
 	WGPEER_A_PROTOCOL_VERSION,
-	WGPEER_A_ADVANCED_SECURITY,
 	__WGPEER_A_LAST
 };
 
