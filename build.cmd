@@ -29,7 +29,7 @@ if exist .deps/prepared goto :build
 
 :download
 	echo [+] Downloading %1
-	curl -#fLo %1 %2 || exit /b 1
+	curl --retry 3 -#fLo %1 %2 || exit /b 1
 	echo [+] Verifying %1
 	for /f %%a in ('CertUtil -hashfile %1 SHA256 ^| findstr /r "^[0-9a-f]*$"') do if not "%%a"=="%~3" exit /b 1
 	echo [+] Extracting %1
@@ -46,7 +46,7 @@ if exist .deps/prepared goto :build
 	del src\*.exe src\*.o src\wincompat\*.o src\wincompat\*.lib 2> NUL
 	set LDFLAGS=-s
 	make --no-print-directory -C src PLATFORM=windows CC=%~2-w64-mingw32-gcc WINDRES=%~2-w64-mingw32-windres V=1 RUNSTATEDIR= SYSTEMDUNITDIR= -j%NUMBER_OF_PROCESSORS% || exit /b 1
-	move /Y src\wg.exe "%~1\wg.exe" > NUL || exit /b 1
+	move /Y src\wg.exe "%~1\awg.exe" > NUL || exit /b 1
 	goto :eof
 
 :error
